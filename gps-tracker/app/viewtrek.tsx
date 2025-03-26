@@ -6,13 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import MapView, { Marker, Polyline } from "react-native-maps";
 
 export default function ViewTrek() {
   const [treks, setTreks] = useState([]);
   const [expandedTrekIndex, setExpandedTrekIndex] = useState(null);
+  const [newTrekName, setNewTrekName] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,20 +34,108 @@ export default function ViewTrek() {
     fetchTreks();
   }, []);
 
+    // useEffect(() => {
+    //   loadTreks();
+    // }, []);
+  
+    // const loadTreks = async () => {
+    //   try {
+    //     const savedTreks = await AsyncStorage.getItem("treks");
+    //     if (savedTreks) {
+    //       setTreks(JSON.parse(savedTreks));
+    //     }
+    //   } catch (error) {
+    //     console.error("Failed to load treks:", error);
+    //   }
+    // };
+
+
+
+
   const toggleExpand = (index) => {
     setExpandedTrekIndex(expandedTrekIndex === index ? null : index);
   };
 
   const deleteTrek = async (index) => {
+    Alert.alert(
+      "Delete Trek",
+      "Are you sure you want to delete this trek?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              const updatedTreks = treks.filter((_, i) => i !== index);
+              await AsyncStorage.setItem("treks", JSON.stringify(updatedTreks));
+              setTreks(updatedTreks);
+              Alert.alert("Success", "Trek deleted successfully!");
+            } catch (error) {
+              console.error("Error deleting trek:", error);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const startEditing = (index, currentName) => {
+    setEditingIndex(index);
+    setNewTrekName(currentName);
+  };
+
+  const saveTrekName = async (index) => {
+    const updatedTreks = treks.map((trek, i) =>
+      i === index ? { ...trek, name: newTrekName } : trek
+    );
     try {
-      const updatedTreks = treks.filter((_, i) => i !== index);
       await AsyncStorage.setItem("treks", JSON.stringify(updatedTreks));
       setTreks(updatedTreks);
-      Alert.alert("Success", "Trek deleted successfully!");
+      setEditingIndex(null);
+      Alert.alert("Success", "Trek name updated successfully!");
     } catch (error) {
-      console.error("Error deleting trek:", error);
+      console.error("Error updating trek name:", error);
     }
   };
+
+
+
+
+
+
+ const getSavedTreks = async () => {
+    try {
+      const savedTreks = await AsyncStorage.getItem("treks");
+      if (savedTreks) {
+        const parsedTreks = JSON.parse(savedTreks);
+
+        parsedTreks.forEach((trek, index) => {
+          if (
+            typeof trek !== "object" ||
+            !trek.name ||
+            !Array.isArray(trek.route)
+          ) {
+            console.warn(`Skipping invalid trek at index ${index}:`, trek);
+            return;
+          }
+
+          console.log(`Trek ${index + 1}: Name - ${trek.name}`);
+
+          trek.route.forEach((coord, i) => {
+            console.log(`  Point ${i + 1}: ${JSON.stringify(coord)}`);
+          });
+        });
+      }
+    } catch (error) {
+      console.error("Error retrieving treks:", error);
+    }
+  };
+
+
+
+
+
 
   return (
     <ScrollView style={styles.container}>
@@ -59,19 +151,70 @@ export default function ViewTrek() {
             </TouchableOpacity>
 
             {expandedTrekIndex === index && (
-              <View style={styles.coordinatesContainer}>
+              <>
                 {trek.route?.length > 0 ? (
-                  trek.route.map((coord, i) => (
+                  <View style={styles.mapContainer}>
+                    <MapView
+                      style={styles.map}
+                      initialRegion={{
+                        latitude: trek.route[0].latitude,
+                        longitude: trek.route[0].longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }}
+                    >
+                      {/* Start Marker */}
+                      <Marker coordinate={trek.route[0]} title="Start" />
+
+                      {/* Polyline for Route */}
+                      <Polyline
+                        coordinates={trek.route}
+                        strokeWidth={4}
+                        strokeColor="blue"
+                      />
+
+                      {/* End Marker */}
+                      <Marker
+                        coordinate={trek.route[trek.route.length - 1]}
+                        title="End"
+                      />
+                    </MapView>
+                  </View>
+                ) : (
+                  <Text style={styles.noRouteText}>No coordinates recorded</Text>
+                )}
+
+                <View style={styles.coordinatesContainer}>
+                  {trek.route?.map((coord, i) => (
                     <Text key={i} style={styles.coordinateText}>
                       Point {i + 1}: Lat {coord.latitude}, Lng {coord.longitude}
                     </Text>
-                  ))
-                ) : (
-                  <Text style={styles.coordinateText}>
-                    No coordinates recorded
-                  </Text>
-                )}
+                  ))}
+                </View>
+              </>
+            )}
+
+            {editingIndex === index ? (
+              <View>
+                <TextInput
+                  style={styles.input}
+                  value={newTrekName}
+                  onChangeText={setNewTrekName}
+                />
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={() => saveTrekName(index)}
+                >
+                  <Text style={styles.buttonText}>Save</Text>
+                </TouchableOpacity>
               </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => startEditing(index, trek.name)}
+              >
+                <Text style={styles.buttonText}>Edit Name</Text>
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity
@@ -87,6 +230,13 @@ export default function ViewTrek() {
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.buttonText}>Back</Text>
       </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.startButton}
+                  onPress={getSavedTreks}
+                >
+                  <Text style={styles.buttonText}>Get Treks</Text>
+                </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -121,35 +271,86 @@ const styles = StyleSheet.create({
   trekName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#007bff",
+  },
+  mapContainer: {
+    height: 300,
+    width: "100%",
+    borderRadius: 10,
+    overflow: "hidden",
+    marginVertical: 10,
+  },
+  map: {
+    flex: 1,
+  },
+  noRouteText: {
+    textAlign: "center",
+    fontSize: 16,
+    color: "red",
+    marginVertical: 10,
   },
   coordinatesContainer: {
     marginTop: 10,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#f9f9f9",
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 5,
   },
   coordinateText: {
     fontSize: 14,
-    color: "#333",
-    marginBottom: 5,
+    paddingVertical: 2,
   },
   deleteButton: {
-    backgroundColor: "red",
+    backgroundColor: "#d32f2f",
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
-    alignItems: "center",
-  },
-  backButton: {
-    backgroundColor: "#007bff",
-    padding: 15,
-    borderRadius: 5,
-    alignItems: "center",
-    marginTop: 20,
   },
   buttonText: {
     color: "white",
+    textAlign: "center",
     fontWeight: "bold",
   },
+  backButton: {
+    backgroundColor: "#00796b",
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 8,
+    marginVertical: 5,
+  },
+  editButton: {
+    backgroundColor: "#0288d1",
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  saveButton: {
+    backgroundColor: "#388e3c",
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+
+
+
+
+
+
+
+
+
+
+  startButton: {
+    backgroundColor: "#00796B",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginTop: 10,
+    alignItems: "center",
+  },
+
 });

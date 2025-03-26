@@ -27,8 +27,10 @@ export default function TrekScreen() {
       const trekData = { name, route };
       const existingTreks = await AsyncStorage.getItem("treks");
       const treks = existingTreks ? JSON.parse(existingTreks) : [];
-      treks.push(trekData);
-      await AsyncStorage.setItem("treks", JSON.stringify(treks));
+      const updatedTreks = treks.map(trek =>
+        trek.name === name ? { ...trek, route } : trek
+      );
+      await AsyncStorage.setItem("treks", JSON.stringify(updatedTreks));
       alert("Trek saved successfully!");
     } catch (error) {
       console.error("Error saving trek:", error);
@@ -61,11 +63,7 @@ export default function TrekScreen() {
                 <Marker coordinate={route[0]} title="Start" />
 
                 {/* Polyline to show the route */}
-                <Polyline
-                  coordinates={route}
-                  strokeWidth={5}
-                  strokeColor="blue"
-                />
+                <Polyline coordinates={route} strokeWidth={5} strokeColor="blue" />
 
                 {/* Last known position */}
                 {route.length > 1 && (
@@ -77,11 +75,9 @@ export default function TrekScreen() {
             )}
           </View>
 
-          {/* Pass location update function to LocationTracker */}
           <LocationTracker onLocationUpdate={handleLocationUpdate} />
 
           {/* Display list of coordinates */}
-
           <View style={styles.listContainer}>
             <Text style={styles.listTitle}>Recorded Coordinates:</Text>
             <FlatList
@@ -96,17 +92,11 @@ export default function TrekScreen() {
             />
           </View>
 
-          <View>
-
-
-           <TouchableOpacity onPress={saveTrek} style={styles.savebutton}>
-              <Text style={{ color: "white", textAlign: "center" }}>
-                Save Trek
-              </Text>
-            </TouchableOpacity> 
-
-
-          </View>
+          <TouchableOpacity onPress={saveTrek} style={styles.savebutton}>
+            <Text style={{ color: "white", textAlign: "center" }}>
+              Save Trek
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </ImageBackground>
@@ -166,37 +156,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    padding: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderRadius: 10,
-    marginTop: 20,
-    width: "90%",
-    height: 300,
-    flex: 1,
-    borderWidth: 2,
-    borderColor: "black",
+    width: "100%",
+    padding: 15,
+    marginBottom: 20,
   },
-
   listTitle: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
   },
   coordinateItem: {
-    fontSize: 14,
-    paddingVertical: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    fontSize: 16,
+    marginBottom: 5,
   },
-
   savebutton: {
-    backgroundColor: "#00897b",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 20,
-    width: 300,
-    alignSelf: "center",
-    borderWidth: 1,
-    borderColor: "black",
+    backgroundColor: "#0288D1",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    width: "80%",
+    marginBottom: 20,
   },
 });

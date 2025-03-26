@@ -13,18 +13,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 
 export default function HomeScreen() {
-  useEffect(() => {
-    const clearStorage = async () => {
-      try {
-        await AsyncStorage.clear();
-        console.log("Local storage cleared!");
-      } catch (error) {
-        console.error("Failed to clear storage:", error);
-      }
-    };
+  // useEffect(() => {
+  //   const clearStorage = async () => {
+  //     try {
+  //       await AsyncStorage.clear();
+  //       console.log("Local storage cleared!");
+  //     } catch (error) {
+  //       console.error("Failed to clear storage:", error);
+  //     }
+  //   };
 
-    clearStorage();
-  }, []);
+  //   clearStorage();
+  // }, []);
 
   const router = useRouter();
 
