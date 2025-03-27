@@ -80,7 +80,7 @@ export default function TrekInput() {
             style={styles.addTrekButton}
             onPress={saveTrek}
           >
-            <Text style={styles.buttonText}>Start Trek</Text>
+            <Text style={styles.buttonText}>Add</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   container: {
     width: "90%",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 50,
   },
   addButton: {
     backgroundColor: "#0288D1",
@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
     alignItems: "center",
+    width: 200,
   },
   addTrekButton: {
     backgroundColor: "#1B5E20",

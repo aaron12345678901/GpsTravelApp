@@ -27,7 +27,7 @@ export default function TrekScreen() {
       const trekData = { name, route };
       const existingTreks = await AsyncStorage.getItem("treks");
       const treks = existingTreks ? JSON.parse(existingTreks) : [];
-      const updatedTreks = treks.map(trek =>
+      const updatedTreks = treks.map((trek) =>
         trek.name === name ? { ...trek, route } : trek
       );
       await AsyncStorage.setItem("treks", JSON.stringify(updatedTreks));
@@ -58,12 +58,18 @@ export default function TrekScreen() {
                   latitudeDelta: 0.01,
                   longitudeDelta: 0.01,
                 }}
+                provider="google"
+                mapType="hybrid"
               >
                 {/* Start marker */}
                 <Marker coordinate={route[0]} title="Start" />
 
                 {/* Polyline to show the route */}
-                <Polyline coordinates={route} strokeWidth={5} strokeColor="blue" />
+                <Polyline
+                  coordinates={route}
+                  strokeWidth={5}
+                  strokeColor="blue"
+                />
 
                 {/* Last known position */}
                 {route.length > 1 && (
@@ -161,6 +167,7 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 15,
     marginBottom: 20,
+    marginTop: 20,
   },
   listTitle: {
     fontSize: 18,
