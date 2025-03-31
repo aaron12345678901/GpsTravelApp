@@ -14,12 +14,15 @@ import { useRouter } from "expo-router";
 import MapView, { Marker, Polyline } from "react-native-maps";
 
 export default function ViewTrek() {
+  // State to store treks data
   const [treks, setTreks] = useState([]);
   const [expandedTrekIndex, setExpandedTrekIndex] = useState(null);
   const [newTrekName, setNewTrekName] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
+
   const router = useRouter();
 
+  // Fetch saved treks from AsyncStorage when component mounts
   useEffect(() => {
     const fetchTreks = async () => {
       try {
@@ -35,10 +38,12 @@ export default function ViewTrek() {
     fetchTreks();
   }, []);
 
+  // Toggle expanded state for trek details
   const toggleExpand = (index) => {
     setExpandedTrekIndex(expandedTrekIndex === index ? null : index);
   };
 
+  // Delete a trek from storage
   const deleteTrek = async (index) => {
     Alert.alert(
       "Delete Trek",
@@ -63,11 +68,13 @@ export default function ViewTrek() {
     );
   };
 
+  // Start editing trek name
   const startEditing = (index, currentName) => {
     setEditingIndex(index);
     setNewTrekName(currentName);
   };
 
+  // Save the edited trek name
   const saveTrekName = async (index) => {
     const updatedTreks = treks.map((trek, i) =>
       i === index ? { ...trek, name: newTrekName } : trek
@@ -82,33 +89,34 @@ export default function ViewTrek() {
     }
   };
 
-  const getSavedTreks = async () => {
-    try {
-      const savedTreks = await AsyncStorage.getItem("treks");
-      if (savedTreks) {
-        const parsedTreks = JSON.parse(savedTreks);
+  // Debug function to fetch and log stored treks
+  // const getSavedTreks = async () => {
+  //   try {
+  //     const savedTreks = await AsyncStorage.getItem("treks");
+  //     if (savedTreks) {
+  //       const parsedTreks = JSON.parse(savedTreks);
 
-        parsedTreks.forEach((trek, index) => {
-          if (
-            typeof trek !== "object" ||
-            !trek.name ||
-            !Array.isArray(trek.route)
-          ) {
-            console.warn(`Skipping invalid trek at index ${index}:`, trek);
-            return;
-          }
+  //       parsedTreks.forEach((trek, index) => {
+  //         if (
+  //           typeof trek !== "object" ||
+  //           !trek.name ||
+  //           !Array.isArray(trek.route)
+  //         ) {
+  //           console.warn(`Skipping invalid trek at index ${index}:`, trek);
+  //           return;
+  //         }
 
-          console.log(`Trek ${index + 1}: Name - ${trek.name}`);
+  //         console.log(`Trek ${index + 1}: Name - ${trek.name}`);
 
-          trek.route.forEach((coord, i) => {
-            console.log(`  Point ${i + 1}: ${JSON.stringify(coord)}`);
-          });
-        });
-      }
-    } catch (error) {
-      console.error("Error retrieving treks:", error);
-    }
-  };
+  //         trek.route.forEach((coord, i) => {
+  //           console.log(`  Point ${i + 1}: ${JSON.stringify(coord)}`);
+  //         });
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error retrieving treks:", error);
+  //   }
+  // };
 
   return (
     <ImageBackground
@@ -119,6 +127,7 @@ export default function ViewTrek() {
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Stored Treks</Text>
 
+        {/* Show a message if no treks are available */}
         {treks.length === 0 ? (
           <Text style={styles.noTrekText}>No treks saved.</Text>
         ) : (
@@ -128,6 +137,7 @@ export default function ViewTrek() {
                 <Text style={styles.trekName}>{trek.name}</Text>
               </TouchableOpacity>
 
+              {/* Expand trek details when selected */}
               {expandedTrekIndex === index && (
                 <>
                   {trek.route?.length > 0 ? (
@@ -166,6 +176,7 @@ export default function ViewTrek() {
                     </Text>
                   )}
 
+                  {/* Show list of recorded coordinates */}
                   <View style={styles.coordinatesContainer}>
                     {trek.route?.map((coord, i) => (
                       <Text key={i} style={styles.coordinateText}>
@@ -177,6 +188,7 @@ export default function ViewTrek() {
                 </>
               )}
 
+              {/* Edit Trek Name */}
               {editingIndex === index ? (
                 <View>
                   <TextInput
@@ -200,6 +212,7 @@ export default function ViewTrek() {
                 </TouchableOpacity>
               )}
 
+              {/* Delete Trek Button */}
               <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => deleteTrek(index)}
@@ -210,6 +223,7 @@ export default function ViewTrek() {
           ))
         )}
 
+        
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -217,9 +231,13 @@ export default function ViewTrek() {
           <Text style={styles.buttonText}>Back</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.startButton} onPress={getSavedTreks}>
+
+        {/* Debugging Button */}
+        {/* <TouchableOpacity style={styles.startButton} onPress={getSavedTreks}>
           <Text style={styles.buttonText}>Get Treks</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+
+
       </ScrollView>
     </ImageBackground>
   );
@@ -314,6 +332,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 8,
     marginVertical: 5,
+    color: "white",
   },
   editButton: {
     backgroundColor: "#0288d1",

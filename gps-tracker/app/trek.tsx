@@ -12,9 +12,13 @@ import { useState } from "react";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import LocationTracker from "../components/LocationTracker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Compass from "../components/Compass";
 
 export default function TrekScreen() {
+  // Get the trek name from the URL parameters
   const { name } = useLocalSearchParams();
+
+  // State to store the user's recorded route
   const [route, setRoute] = useState([]);
 
   // Function to update route when a new location comes in
@@ -22,14 +26,18 @@ export default function TrekScreen() {
     setRoute((prevRoute) => [...prevRoute, newCoords]);
   };
 
+  // Function to save the trek data to AsyncStorage
   const saveTrek = async () => {
     try {
       const trekData = { name, route };
       const existingTreks = await AsyncStorage.getItem("treks");
       const treks = existingTreks ? JSON.parse(existingTreks) : [];
+
+      // Update the existing trek if found, otherwise keep it unchanged
       const updatedTreks = treks.map((trek) =>
         trek.name === name ? { ...trek, route } : trek
       );
+
       await AsyncStorage.setItem("treks", JSON.stringify(updatedTreks));
       alert("Trek saved successfully!");
     } catch (error) {
@@ -45,9 +53,11 @@ export default function TrekScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
+          {/* Display the trek name */}
           <Text style={styles.title}>Trek Name:</Text>
           <Text style={styles.trekName}>{name}</Text>
 
+          {/* Map container to display the trek route */}
           <View style={styles.mapContainer}>
             {route.length > 0 ? (
               <MapView
@@ -71,7 +81,7 @@ export default function TrekScreen() {
                   strokeColor="blue"
                 />
 
-                {/* Last known position */}
+                {/* Marker for the last known position */}
                 {route.length > 1 && (
                   <Marker coordinate={route[route.length - 1]} title="You" />
                 )}
@@ -81,9 +91,15 @@ export default function TrekScreen() {
             )}
           </View>
 
+          {/* Compass component */}
+          <View style={styles.compassContainer}>
+            <Compass />
+          </View>
+
+          {/* Location tracker to update user position */}
           <LocationTracker onLocationUpdate={handleLocationUpdate} />
 
-          {/* Display list of coordinates */}
+          {/* Display list of recorded coordinates */}
           <View style={styles.listContainer}>
             <Text style={styles.listTitle}>Recorded Coordinates:</Text>
             <FlatList
@@ -98,6 +114,7 @@ export default function TrekScreen() {
             />
           </View>
 
+          {/* Save trek button */}
           <TouchableOpacity onPress={saveTrek} style={styles.savebutton}>
             <Text style={{ color: "white", textAlign: "center" }}>
               Save Trek
@@ -144,7 +161,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 10,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "black",
@@ -185,5 +202,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: "80%",
     marginBottom: 20,
+  },
+
+  compassContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: 100,
+    borderWidth: 2,
+    borderColor: "black",
+    height: 200,
+    width: 200,
   },
 });

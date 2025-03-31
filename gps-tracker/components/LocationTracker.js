@@ -10,43 +10,66 @@ export default function LocationTracker({ onLocationUpdate }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
+    let locationSubscription;
+
     (async () => {
+      // Request location permissions
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setErrorMsg("Permission to access location was denied");
         return;
       }
 
-      let loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc);
-      sendLocation(loc);
+      // Fetch initial location
+      let loc = await fetchLocation();
+      if (loc) {
+        updateLocation(loc);
+      }
 
-      // Pass initial location to parent
-      onLocationUpdate && onLocationUpdate(loc.coords);
+      // Start periodic updates
+      locationSubscription = setInterval(async () => {
+        let newLoc = await fetchLocation();
+        if (newLoc) {
+          updateLocation(newLoc);
+        }
+      }, 30 * 1000); // Updates every 30 seconds
 
-      const interval = setInterval(async () => {
-        let loc = await Location.getCurrentPositionAsync({});
-        setLocation(loc);
-        sendLocation(loc);
-
-        // Send updates to TrekScreen
-        onLocationUpdate && onLocationUpdate(loc.coords);
-
-        Toast.show({
-          type: "info",
-          text1: "Location Update",
-          text2: "Location sent successfully",
-        });
-      }, 0.5 * 60 * 1000);
-
-      return () => clearInterval(interval);
+      return () => clearInterval(locationSubscription);
     })();
+
+    return () => clearInterval(locationSubscription);
   }, []);
 
-  async function sendLocation(loc) {
-    const state = await NetInfo.fetch();
+  async function fetchLocation() {
+    try {
+      return await Location.getCurrentPositionAsync({});
+    } catch (error) {
+      console.error("Error fetching location:", error);
+      return null;
+    }
+  }
 
-    if (state.isConnected) {
+  function updateLocation(loc) {
+    setLocation(loc);
+
+    // Pass location to parent (if provided)
+    onLocationUpdate?.(loc.coords);
+
+    // Send location to API or fallback to SMS
+    sendLocation(loc);
+
+    // Show toast notification
+    Toast.show({
+      type: "info",
+      text1: "Location Updated",
+      text2: "Location sent successfully!",
+    });
+  }
+
+  async function sendLocation(loc) {
+    const { isConnected } = await NetInfo.fetch();
+
+    if (isConnected) {
       try {
         let response = await fetch(
           "https://travelapp-nu.vercel.app/api/location",
@@ -62,21 +85,27 @@ export default function LocationTracker({ onLocationUpdate }) {
         );
 
         if (!response.ok) {
+          console.warn("Failed to send location. Retrying...");
           retrySendLocation(loc);
         }
       } catch (error) {
+        console.error("Network error:", error);
         retrySendLocation(loc);
       }
     } else {
-      const isAvailable = await SMS.isAvailableAsync();
-      if (isAvailable) {
-        await SMS.sendSMSAsync(
-          ["07586054088"],
-          `Location: ${loc.coords.latitude}, ${
-            loc.coords.longitude
-          }, Time: ${new Date()}`
-        );
-      }
+      await sendLocationViaSMS(loc);
+    }
+  }
+
+  async function sendLocationViaSMS(loc) {
+    const isAvailable = await SMS.isAvailableAsync();
+    if (isAvailable) {
+      await SMS.sendSMSAsync(
+        ["07586054088"],
+        `Location: ${loc.coords.latitude}, ${loc.coords.longitude}, Time: ${new Date()}`
+      );
+    } else {
+      console.warn("SMS not available. Unable to send location.");
     }
   }
 
@@ -87,13 +116,13 @@ export default function LocationTracker({ onLocationUpdate }) {
       text2: "Attempting to resend location in 3 minutes",
     });
 
-    setTimeout(() => sendLocation(loc), 3 * 60 * 1000);
+    setTimeout(() => sendLocation(loc), 3 * 60 * 1000); // Retry in 3 minutes
   }
 
   return (
     <View style={styles.container}>
       <Text style={styles.text}>
-        {errorMsg ? errorMsg : "Current location..."}
+        {errorMsg || "Tracking location..."}
       </Text>
       {location && (
         <>
