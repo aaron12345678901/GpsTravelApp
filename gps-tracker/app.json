@@ -7,7 +7,7 @@
     "icon": "./assets/images/trekmate.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
@@ -15,6 +15,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/trekmate.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.aaronmc93.TrekMate",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDDaG0yCi5TlyWDK4kJJnIyHoKxMhD-a3Y"
+        }
       }
     },
     "web": {
@@ -36,6 +42,19 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "2ee59233-82a4-400c-be15-0b4766d83162"
+      }
+    }
+  },
+  "doctor": {
+    "reactNativeDirectoryCheck": {
+      "exclude": ["react-native-maps"]
     }
   }
 }
